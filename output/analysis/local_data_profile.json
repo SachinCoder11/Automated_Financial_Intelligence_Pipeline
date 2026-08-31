@@ -1,0 +1,30 @@
+{
+  "source_file": "XBRL-XBRL-PL-2025_part1.csv",
+  "source_origin_status": "The workspace does not contain provenance metadata establishing the original external publisher or download URL.",
+  "raw_rows": 96632,
+  "raw_columns": 130,
+  "fully_empty_columns_removed": 16,
+  "columns_after_empty_removal": 114,
+  "duplicate_rows_after_empty_removal": 0,
+  "total_missing_cells_raw": 7001669,
+  "filtered_current_fy_2024_25_rows": 48068,
+  "revenue_positive_analysis_rows": 45414,
+  "revenue_nonpositive_or_missing_excluded_from_ratio_analysis": 2654,
+  "unique_company_uids_in_analysis": 45414,
+  "profit_margin_median_percent": 1.80685329006882,
+  "profit_margin_iqr_outlier_count": 11410,
+  "profitability_counts": {
+    "profitable": 35697,
+    "loss_making": 12119,
+    "zero_profit": 252,
+    "missing_profit": 0
+  },
+  "derived_file": "MCA_PL_FY2024_25_Clean_Analysis.csv",
+  "derived_file_rows": 45414,
+  "derived_file_columns": 19,
+  "graphs": [
+    "profit_margin_distribution.png",
+    "finance_cost_burden.png",
+    "financial_correlation_matrix.png"
+  ]
+}
