@@ -430,6 +430,88 @@ A user uploads financial data without needing to know Python, Pandas, Seaborn, M
 
 ---
 
+## Appendix A. Local Data Sources, Use, and Evidence-Based Findings
+
+### A.1 Provenance and Data Inventory
+
+This appendix records the datasets and code found in the local project workspace at the time of review. The original external publisher or download URL is **not documented in the workspace**. File names such as `MCA` and `XBRL` suggest a company/financial-reporting context, but that label alone is not sufficient evidence to claim an official external source. Before presenting this work externally, the team should add source URL, collection date, license/permission status, reporting-period coverage, and any transformation history.
+
+| Local asset | What it contains | How it was used or intended to be used | Relevance |
+|---|---|---|---|
+| `XBRL-XBRL-PL-2025_part1.csv` | 96,632 rows and 130 columns of company-level profit-and-loss/reporting fields. Examples include `company_uid`, reporting-period dates, revenue, expenses, profit, tax, finance costs, employee costs, depreciation, R&D, CSR, industry, and report type. | This is the primary input read by `EDA_Project_001.ipynb`, `Final_Destination.ipynb`, `check.ipynb`, and `c.py`. | High: primary analytical dataset for the existing work. |
+| `MCA_PL_FY2024_25_Clean_Analysis.csv` | 45,414 rows and 19 selected/derived columns for revenue-positive FY 2024-25 records. It includes the selected P&L metrics plus calculated ratios. | Created by `Final_Destination.ipynb`; subsequently reloaded for distribution and skewness analysis. | High: derived analytical output, not an independent raw source. |
+| `company_master_data_2026-08-25 (1).csv` | Company identity/master data fields such as CIN, company name, registration date, category, class, listing status, capital, ROC, address, state, and status. | Referenced by `Finance_Data_Company_Name.sql` for database rename, schema inspection, count, and company-identity searches. No scanned Python notebook directly reads it. | Medium: potentially useful for enriching company IDs with entity metadata after a validated join. |
+| `Finance_Data_Company_Name.sql` | SQL setup and inspection queries against the company-master table. | Creates/selects the `Finance_EDA` database, describes the table, counts rows/CINs, and searches identity fields. | Supporting metadata workflow; not financial-metric computation. |
+
+### A.2 How the Primary Dataset Was Used
+
+The notebooks load `XBRL-XBRL-PL-2025_part1.csv`, inspect size, types, missing data, fully empty columns, duplicate records, and reporting-period fields. `Final_Destination.ipynb` then selects records marked `current` with a start date of `2024-04-01` and end date of `2025-03-31`. It retains only records with positive revenue before ratio analysis and calculates:
+
+- Profit margin = Profit/Loss for Period / Revenue × 100
+- Expense ratio = Expenses / Revenue × 100
+- Finance-cost ratio = Finance Costs / Revenue × 100
+- Employee-cost ratio = Employee Benefit Expense / Revenue × 100
+- R&D intensity = Research & Development Expenditure / Revenue × 100
+
+The notebook exports these fields and ratios to `MCA_PL_FY2024_25_Clean_Analysis.csv`. It also runs descriptive statistics, a profit-margin IQR outlier check, skewness checks, distributions, a revenue-versus-margin scatter plot, finance-cost burden quartiles, and a correlation matrix. `check.ipynb` and `c.py` only inspect identity-like fields in the P&L file and list `company_uid` examples; they do not merge the master data.
+
+### A.3 Observed Dataset Results
+
+These results are reproducible from the local files using `analyze_local_finance_data.py`; they describe the reviewed dataset, not the proposed user-upload financial-intelligence product.
+
+| Measure | Observed result | Interpretation / relevance |
+|---|---:|---|
+| Raw P&L rows / columns | 96,632 / 130 | Broad financial-reporting feature set for exploratory company analysis. |
+| Fully empty columns removed | 16 | The notebooks correctly reduce entirely unusable fields before deeper analysis. |
+| Columns after removal | 114 | Remaining scope is still wide; feature selection is important. |
+| Duplicate rows after empty-column removal | 0 | No full-row duplicates detected by the reviewed check. This does not prove there are no business-level duplicates. |
+| Total missing cells in raw file | 7,001,669 | Missingness is material and must be handled per metric; it limits automatic conclusions. |
+| Current FY 2024-25 filtered rows | 48,068 | The existing financial analysis is focused on this selected reporting period. |
+| Revenue-positive rows used for ratio analysis | 45,414 | Ratio-based output excludes 2,654 non-positive or missing-revenue records to avoid invalid denominators. |
+| Unique `company_uid` values in ratio analysis | 45,414 | In this selected output, each retained row corresponds to a distinct UID. |
+| Median profit margin | 1.81% | A descriptive midpoint for the retained population; not a benchmark or recommendation. |
+| IQR profit-margin outlier flags | 11,410 | The IQR rule flags statistical extremes; it does not establish error, fraud, or poor performance. |
+| Profitable / loss-making / zero-profit rows | 35,697 / 12,119 / 252 | Demonstrates that the data contains both positive- and negative-profit companies, useful for segmentation. |
+
+### A.4 Relationships Identified in the Existing Analysis
+
+| Relationship | Observed statistic | What it means | Caution |
+|---|---:|---|---|
+| Revenue and expenses | Pearson correlation 0.999 | In this dataset, larger revenue values tend to occur alongside larger expense values. | Scale dominates this relationship; it does not show efficiency or causation. |
+| Revenue and profit after tax | Pearson correlation 0.001 | Near-zero linear association across the retained records. | Profitability depends on costs, taxes, margins, and data distribution; a near-zero linear correlation is not a business conclusion by itself. |
+| Expenses and profit after tax | Pearson correlation -0.002 | Near-zero linear association across the retained records. | Do not interpret this as expenses having no business impact; simple Pearson correlation can hide nonlinear or segmented effects. |
+| Finance-cost ratio and profit margin | Pearson correlation -0.168 | Higher finance-cost burden is weakly associated with lower profit margin in this cross-sectional view. | Association is not causation and should be reviewed by industry/size segment. |
+| Finance-cost burden quartile to median margin | Q1 3.04%, Q2 2.08%, Q3 1.62%, Q4 1.32% | The existing quartile view shows declining median margin as finance-cost burden rises. | Descriptive only; it needs controls and finance validation before decision use. |
+
+### A.5 Graphs Generated From the Local Analytical Dataset
+
+The accompanying graphs are generated from the 45,414 revenue-positive, current FY 2024-25 records. Profit-margin values are clipped only for the histogram display so extreme values do not hide the overall distribution; calculations retain the underlying values. The correlation matrix is a descriptive Pearson correlation view.
+
+![Profit margin distribution](output/analysis/profit_margin_distribution.png)
+
+![Median profit margin by finance-cost burden](output/analysis/finance_cost_burden.png)
+
+![Financial-variable correlation matrix](output/analysis/financial_correlation_matrix.png)
+
+### A.6 Data Relationship Flow
+
+```mermaid
+flowchart LR
+    A[XBRL-XBRL-PL-2025_part1.csv\nRaw P&L reporting data] --> B[Quality checks\nmissingness, empties, duplicates]
+    B --> C[Period filter\ncurrent, 2024-04-01 to 2025-03-31]
+    C --> D[Revenue > 0 filter\nfor valid ratio denominators]
+    D --> E[Metric derivation\nmargins and cost ratios]
+    E --> F[MCA_PL_FY2024_25_Clean_Analysis.csv\nDerived analytical dataset]
+    E --> G[Distributions, outliers, quartiles, correlations]
+    H[company_master_data_2026-08-25 (1).csv\nCompany identity/master data] -. future validated UID/CIN join .-> E
+```
+
+### A.7 Relevance to the Proposed Product
+
+The existing work is most relevant as a **business financial-statement analysis prototype**, not as the personal-finance transaction MVP defined above. It shows the value of data-quality checks, explicit period filters, deterministic ratio calculations, outlier detection, and structured export. The proposed product should reuse these principles while keeping two contexts separate: transaction-level personal finance requires dates, categories, amounts, and income/expense labels; company P&L analysis requires reporting periods, financial-statement line items, and finance-team-approved ratios.
+
+---
+
 ## Final Quality Check
 
 - Existing reference projects and the proposed system are separated throughout.

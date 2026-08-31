@@ -1,5 +1,6 @@
 from pathlib import Path
 from xml.sax.saxutils import escape
+import json
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
@@ -8,12 +9,14 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle,
-    KeepTogether
+    KeepTogether, Image
 )
 
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT / "output" / "pdf" / "Automated_Financial_Intelligence_Project_Scope.pdf"
 OUT.parent.mkdir(parents=True, exist_ok=True)
+PROFILE = json.loads((ROOT / "output" / "analysis" / "local_data_profile.json").read_text(encoding="utf-8"))
+GRAPH_DIR = ROOT / "output" / "analysis"
 
 NAVY = colors.HexColor("#102A43")
 BLUE = colors.HexColor("#1F6E8C")
@@ -140,6 +143,30 @@ story += [Paragraph("What We Should Build First", styles["H2x"]), Paragraph("CSV
           p("AI model training should come after the deterministic pipeline has a working, testable structured output. This gives the team an evidence base for evaluating whether generated explanations are accurate and useful."),
           Paragraph("Future Scope - Planned", styles["H2x"]), p("Possible later extensions include PDF bank statements, OCR, bank API integrations, multiple accounts, business and investment analysis, forecasting, budget recommendations, cash-flow forecasting, financial-health scoring, advanced anomaly detection, multi-user support, cloud deployment, role-based access, secure document storage, explainable AI, and feedback-driven model improvement."),
           Paragraph("Final Vision", styles["H2x"]), p("A user uploads financial data without needing Python, Pandas, Seaborn, Matplotlib, statistics or SQL. The system handles analytical work and returns a financial overview, important metrics, trends, patterns, anomalies, drivers, explanations, visualizations and personalized insights. The first success is a trustworthy, narrow CSV/XLSX personal-finance MVP.")]
+
+story += [PageBreak()]
+story += section("Appendix A. Local Data Sources and Existing Analysis")
+story += [p("This appendix records evidence found in the local workspace. The original external publisher and download URL for the local datasets are not documented there. File names such as MCA and XBRL suggest a company-reporting context, but filenames alone are not sufficient evidence to claim an official external source. Before external use, record the source URL, collection date, permissions/license, coverage, and transformation history."),
+          table(["Local asset", "Observed contents", "Use in scanned code", "Relevance"], [["XBRL-XBRL-PL-2025_part1.csv", "96,632 rows; 130 P&L/reporting fields, including UID, dates, revenue, expenses, profit, taxes, cost lines, industry and report type.", "Primary input for EDA_Project_001.ipynb, Final_Destination.ipynb, check.ipynb and c.py.", "High - primary analytical source"], ["MCA_PL_FY2024_25_Clean_Analysis.csv", "45,414 rows; 19 selected and derived metrics/ratios.", "Created in Final_Destination.ipynb and reloaded for distribution/skewness analysis.", "High - derived output, not an independent source"], ["company_master_data_2026-08-25 (1).csv", "Company identity fields: CIN, name, date, status, capital, ROC, address, state and classification.", "Referenced by SQL inspection/query script; no scanned Python notebook reads it.", "Medium - possible future enrichment after validated join"], ["Finance_Data_Company_Name.sql", "Database setup and company-master inspection/search queries.", "Describes, counts and searches company master records.", "Supporting metadata workflow"]], [3.15*cm, 4.55*cm, 5.05*cm, 3.65*cm]),
+          Paragraph("How the Data Was Used", styles["H2x"]),
+          p("The main notebook performs data-quality checks, removes fully empty fields, filters rows marked current with reporting dates from 2024-04-01 to 2025-03-31, and retains positive-revenue rows for ratio calculations. It derives profit margin, expense ratio, finance-cost ratio, employee-cost ratio, and R&D intensity; then exports the selected dataset. Other notebook cells inspect missingness, duplicates, distribution, skewness, outliers, finance-cost quartiles and correlation. The smaller check.ipynb and c.py files inspect identity-like P&L fields and company UID examples only."),
+          Paragraph("Data Relationship Flow", styles["H2x"]),
+          Paragraph("RAW XBRL P&L FILE  →  QUALITY CHECKS  →  CURRENT FY 2024-25 FILTER  →  REVENUE > 0 FILTER FOR RATIOS  →  DERIVED METRICS  →  CLEAN ANALYTICAL CSV  →  DISTRIBUTIONS / OUTLIERS / QUARTILES / CORRELATIONS", styles["Callout"]),
+          p("The company master file is not joined by the scanned Python code. It may later enrich company identifiers only after finance and data teams validate an unambiguous UID/CIN mapping.")]
+
+story += section("Appendix B. Observed Data Results and Relationships")
+story += [p("The following results were calculated from the local XBRL P&L file by analyze_local_finance_data.py. They describe the reviewed company-financial dataset, not the proposed user-upload fintech product."),
+          table(["Measure", "Observed result", "Interpretation"], [["Raw dataset", f"{PROFILE['raw_rows']:,} rows; {PROFILE['raw_columns']} columns", "Wide company financial-reporting dataset."], ["Fully empty fields", f"{PROFILE['fully_empty_columns_removed']} removed; {PROFILE['columns_after_empty_removal']} remain", "Empty fields were excluded before analysis."], ["Missing cells", f"{PROFILE['total_missing_cells_raw']:,}", "Material missingness; handle per metric."], ["Duplicate full rows", str(PROFILE['duplicate_rows_after_empty_removal']), "No full-row duplicates found by this check; not proof of no business duplicates."], ["Current FY 2024-25", f"{PROFILE['filtered_current_fy_2024_25_rows']:,} rows", "Existing analysis period selection."], ["Revenue-positive ratio analysis", f"{PROFILE['revenue_positive_analysis_rows']:,} rows; {PROFILE['revenue_nonpositive_or_missing_excluded_from_ratio_analysis']:,} excluded", "Avoids invalid ratio denominators."], ["Unique company UIDs", f"{PROFILE['unique_company_uids_in_analysis']:,}", "One UID per retained output row."], ["Median profit margin", f"{PROFILE['profit_margin_median_percent']:.2f}%", "Descriptive midpoint, not a benchmark."], ["IQR margin outlier flags", f"{PROFILE['profit_margin_iqr_outlier_count']:,}", "Statistical extremes; not fraud/error conclusions."], ["Profit / loss / zero", "35,697 / 12,119 / 252", "Supports outcome segmentation."]], [3.5*cm, 4.1*cm, 8.8*cm]),
+          Paragraph("Observed Relationships", styles["H2x"]),
+          table(["Relationship", "Observed statistic", "Meaning and caution"], [["Revenue vs expenses", f"Pearson r = {PROFILE['selected_linear_correlations']['revenue_expenses']:.3f}", "Very strong scale association; does not establish efficiency or causation."], ["Revenue vs profit after tax", f"Pearson r = {PROFILE['selected_linear_correlations']['revenue_profit_after_tax']:.3f}", "Near-zero linear association; do not treat as a business conclusion by itself."], ["Expenses vs profit after tax", f"Pearson r = {PROFILE['selected_linear_correlations']['expenses_profit_after_tax']:.3f}", "Near-zero linear association; nonlinear and segmented effects may exist."], ["Finance-cost ratio vs profit margin", f"Pearson r = {PROFILE['selected_linear_correlations']['finance_cost_ratio_profit_margin']:.3f}", "Weak negative association; requires industry/size review and is not causal."], ["Finance-cost burden quartiles", "Median margin: Q1 3.04%; Q2 2.08%; Q3 1.62%; Q4 1.32%", "Descriptive decline across burden quartiles; finance validation required."]], [4.2*cm, 4.3*cm, 7.9*cm])]
+
+story += [PageBreak()]
+story += section("Appendix C. Graphs From Local Analytical Data")
+story += [p("Graphs use the 45,414 revenue-positive current FY 2024-25 records. The profit-margin histogram clips the displayed tails only; underlying calculations retain original values. The correlation heatmap is a descriptive Pearson-correlation view and does not demonstrate causation."),
+          Paragraph("Figure 1. Profit Margin Distribution", styles["H2x"]), Image(str(GRAPH_DIR / "profit_margin_distribution.png"), width=15.8*cm, height=8.8*cm),
+          Paragraph("Figure 2. Median Profit Margin by Finance-Cost Burden", styles["H2x"]), Image(str(GRAPH_DIR / "finance_cost_burden.png"), width=15.8*cm, height=8.8*cm),
+          PageBreak(), Paragraph("Figure 3. Financial Variable Correlation Matrix", styles["H2x"]), Image(str(GRAPH_DIR / "financial_correlation_matrix.png"), width=15.0*cm, height=11.7*cm),
+          p("Relevance to the proposed product: this existing work is a business financial-statement analysis prototype, whereas the proposed MVP is transaction-level personal-finance analysis. The reusable lessons are data-quality checks, explicit filters, deterministic ratios, structured outputs, outlier logic and explainable visuals. The contexts and metrics should remain separate.")]
 
 story += section("References")
 story += [rich("1. <link href='https://github.com/vinzalfaro/personal-finance-dashboard' color='#1F6E8C'>https://github.com/vinzalfaro/personal-finance-dashboard</link><br/>2. <link href='https://github.com/camilasbraz/streamlit-exploratory-analysis' color='#1F6E8C'>https://github.com/camilasbraz/streamlit-exploratory-analysis</link><br/>3. <link href='https://github.com/Data-Centric-AI-Community/fg-data-profiling' color='#1F6E8C'>https://github.com/Data-Centric-AI-Community/fg-data-profiling</link><br/>4. <link href='https://github.com/tenPro4/pandas_financial_statement' color='#1F6E8C'>https://github.com/tenPro4/pandas_financial_statement</link><br/>5. <link href='https://github.com/Chennakeshav2003/SP500-stock-analysis-dashboard' color='#1F6E8C'>https://github.com/Chennakeshav2003/SP500-stock-analysis-dashboard</link><br/>6. <link href='https://github.com/DoshiHarsh/Personal-Finance-Tracker' color='#1F6E8C'>https://github.com/DoshiHarsh/Personal-Finance-Tracker</link>"),
