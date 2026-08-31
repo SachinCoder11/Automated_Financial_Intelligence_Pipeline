@@ -107,6 +107,13 @@ profile = {
         "zero_profit": int((period["ProfitLossForPeriod"] == 0).sum()),
         "missing_profit": int(period["ProfitLossForPeriod"].isna().sum()),
     },
+    "selected_linear_correlations": {
+        "revenue_expenses": float(corr.loc["Revenue", "Expenses"]),
+        "revenue_profit_after_tax": float(corr.loc["Revenue", "ProfitLossForPeriod"]),
+        "expenses_profit_after_tax": float(corr.loc["Expenses", "ProfitLossForPeriod"]),
+        "finance_cost_ratio_profit_margin": float(corr.loc["Finance_Cost_Ratio", "Profit_Margin"]),
+    },
+    "finance_cost_burden_median_profit_margin_percent": {str(k): float(v) for k, v in burden_medians.items()},
     "derived_file": DERIVED.name,
     "derived_file_rows": int(pd.read_csv(DERIVED, usecols=["company_uid"]).shape[0]),
     "derived_file_columns": len(pd.read_csv(DERIVED, nrows=1).columns),

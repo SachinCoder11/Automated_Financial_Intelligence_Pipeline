@@ -19,6 +19,18 @@
     "zero_profit": 252,
     "missing_profit": 0
   },
+  "selected_linear_correlations": {
+    "revenue_expenses": 0.9985855814339729,
+    "revenue_profit_after_tax": 0.0009324524216044138,
+    "expenses_profit_after_tax": -0.0019365838277970397,
+    "finance_cost_ratio_profit_margin": -0.16846526199545672
+  },
+  "finance_cost_burden_median_profit_margin_percent": {
+    "Q1 Low": 3.0365889984865393,
+    "Q2": 2.0755042201311618,
+    "Q3": 1.6179653679653678,
+    "Q4 High": 1.3236175136955548
+  },
   "derived_file": "MCA_PL_FY2024_25_Clean_Analysis.csv",
   "derived_file_rows": 45414,
   "derived_file_columns": 19,
